@@ -1333,18 +1333,27 @@ int MQTTAsync_disconnect(MQTTAsync handle, const MQTTAsync_disconnectOptions* op
 
 int MQTTAsync_isConnected(MQTTAsync handle)
 {
-	MQTTAsyncs* m = handle;
-	int rc = 0;
+    MQTTAsyncs *m = handle;
+    int rc = 0;
+    pid_t thread_id = gettid();
+    int id = (int)thread_id;
 
-	FUNC_ENTRY;
-	MQTTAsync_lock_mutex(mqttasync_mutex);
-	if (m && m->c)
-		rc = m->c->connected;
-	MQTTAsync_unlock_mutex(mqttasync_mutex);
-	FUNC_EXIT_RC(rc);
-	return rc;
+    FUNC_ENTRY;
+    if (mqttasync_mutex->__data.__owner == id)
+    {
+        if (m && m->c)
+            rc = m->c->connected;
+    }
+    else
+    {
+        MQTTAsync_lock_mutex(mqttasync_mutex);
+        if (m && m->c)
+            rc = m->c->connected;
+        MQTTAsync_unlock_mutex(mqttasync_mutex);
+    }
+    FUNC_EXIT_RC(rc);
+    return rc;
 }
-
 
 int MQTTAsync_isComplete(MQTTAsync handle, MQTTAsync_token dt)
 {
